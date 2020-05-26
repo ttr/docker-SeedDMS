@@ -1,0 +1,24 @@
+FROM php:7.4-fpm
+ARG seeddmsver=6.0.9
+
+RUN apt-get update -q && apt-get install -y nginx runit wget poppler-utils catdoc id3 libpng-dev libonig-dev
+RUN docker-php-ext-install -j$(nproc) gd mbstring
+
+COPY ./entrypoint.sh /
+RUN chmod +x /entrypoint.sh
+COPY ./config/runit/ /etc/service
+
+RUN mkdir -p /config/php && rm /usr/local/etc/php-fpm.d/*
+COPY ./config/php/php-fpm.conf /usr/local/etc/php-fpm.conf
+COPY ./config/php/www-data.conf /usr/local/etc/php-fpm.d/
+RUN mv $PHP_INI_DIR/php.ini-production $PHP_INI_DIR/php.ini
+
+COPY ./config/nginx/default.conf /etc/nginx/sites-available/default
+
+RUN mkdir /app/ && wget https://iweb.dl.sourceforge.net/project/seeddms/seeddms-${seeddmsver}/seeddms-quickstart-${seeddmsver}.tar.gz && tar -zxf seeddms-quickstart-${seeddmsver}.tar.gz --strip-components=1 -C /app/ && rm seeddms-quickstart-${seeddmsver}.tar.gz && mv /app/data /app/data.org && mv /app/conf /app/conf.org
+
+COPY config/settings.xml /app/conf.org
+
+EXPOSE 80
+VOLUME ["/app/data", "/app/conf"]
+ENTRYPOINT ["/entrypoint.sh"]

@@ -1,0 +1,13 @@
+#!/usr/bin/env sh
+set -eu
+exec 2>&1
+
+COMMAND=/usr/sbin/nginx
+
+# Check nginx command is executable or not
+test -x ${COMMAND} || exit 0
+
+# Test nginx configuration
+${COMMAND} -t -q || exit 0
+
+exec ${COMMAND} -c /etc/nginx/nginx.conf -g "daemon off;"
